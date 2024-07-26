@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Unauthorized</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+        }
+        .error-title {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .error-message {
+            font-size: 1.2em;
+        }
+        .btn-home {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <div class="error-title text-danger">403 Unauthorized</div>
+        <div class="error-message">
+            <p>Sorry, you do not have permission to access this page.</p>
+            <p>If you believe this is an error, please contact the system administrator.</p>
+              <h1>Summary for Region: <span th:text="${regionCode}"></span></h1>
+        </div>
+        <a class="btn btn-primary btn-home" href="/" th:text="'Back to Home'">Back to Home</a>
+    </div>
+</body>
+</html>

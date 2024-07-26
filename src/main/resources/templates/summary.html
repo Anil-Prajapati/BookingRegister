@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Booking Register</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" th:href="@{/css/summary.css}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function validateDates(event) {
+            const fromDate = document.getElementById("fromDate").value;
+            const toDate = document.getElementById("toDate").value;
+            if (!fromDate || !toDate) {
+                event.preventDefault(); // Prevent form submission
+                alert("Please select both From Date and To Date.");
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 mt-5">
+                <form th:action="@{/summary/date-range}" method="get" class="form-inline" onsubmit="validateDates(event)">
+                    <div class="form-group mx-sm-3 mb-2">
+                        <label for="fromDate" class="sr-only">From Date:</label>
+                        <input type="date" id="fromDate" name="fromDate" class="form-control" placeholder="From Date" th:value="${fromDate}">
+                    </div>
+                    <div class="form-group mx-sm-3 mb-2">
+                        <label for="toDate" class="sr-only">To Date:</label>
+                        <input type="date" id="toDate" name="toDate" class="form-control" placeholder="To Date" th:value="${toDate}">
+                    </div>
+                    <button type="submit" class="btn btn-primary mb-2">Get Summary</button>
+                </form>
+                <a class="btn btn-danger mb-2" th:href="@{/region}">Delivery-Region-Wise</a>
+
+                <a class="btn btn-primary mb-2" th:href="@{/summary/current-month}">Current Month</a>
+                <a class="btn btn-primary mb-2" th:href="@{/summary/previous-month}">Previous Month</a>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Basis</th>
+                            <th>Nos.</th>
+                            <th>Chg. Weight</th>
+                            <th>Freight</th>
+                            <th>Biz%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="summaryItem : ${summary}">
+							 <td>
+                                <a th:href="@{/summary/excel(basis=${summaryItem.bkgBasis}, fromDate=${fromDate}, toDate=${toDate})}" th:text="${summaryItem.bkgBasis}"></a>
+                            </td>
+                      <!--      <td th:text="${summaryItem.bkgBasis}"></td> -->
+                            <td th:text="${summaryItem.totalDocket}"></td>
+                            <td th:text="${#numbers.formatDecimal(summaryItem.sumOfWeight, 1, 'COMMA', 2, 'POINT')}"></td>
+                            <td th:text="${#numbers.formatDecimal(summaryItem.freight, 1, 'COMMA', 2, 'POINT')}"></td>
+                            <td>
+                                <!-- Calculate Biz% -->
+                                  <span th:text="${#numbers.formatDecimal((summaryItem.totalDocket * 100.0) / totalDocket, 1, 'COMMA', 2, 'POINT')} + '%'"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>Total</strong></td><!--Here we are total value of the data -->
+                            <td><strong th:text="${totalDocket}"></strong></td>
+                            <td><strong th:text="${#numbers.formatDecimal(totalWeight, 1, 'COMMA', 2, 'POINT')}"></strong></td>
+                            <td><strong th:text="${#numbers.formatDecimal(totalFreight, 1, 'COMMA', 2, 'POINT')}"></strong></td>
+                            <td>
+                                <!-- Calculate and format total Biz% -->
+                                <strong th:text="${#numbers.formatDecimal((totalDocket * 100.0) / totalDocket, 1, 'COMMA', 2, 'POINT')} + '%'"></strong>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <div class="col-md-12 mt-4">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <script th:inline="javascript">
+        /*<![CDATA[*/
+        const summaryData = /*[[${summary}]]*/[
+            { bkgBasis: 'TBB', sumOfWeight: 120, freight: 1000, totalDocket: 400 }, // Example summary data for chart
+            { bkgBasis: 'BOD', sumOfWeight: 80, freight: 800, totalDocket: 200 },
+            { bkgBasis: 'FOD', sumOfWeight: 50, freight: 500, totalDocket: 300 },
+            { bkgBasis: 'PAID', sumOfWeight: 50, freight: 500, totalDocket: 100 },
+        ];
+
+        const labels = summaryData.map(item => item.bkgBasis);
+        const bizPercentages = summaryData.map(item => ((item.totalDocket * 100.0) / summaryData.reduce((acc, item) => acc + item.totalDocket, 0)).toFixed(2));
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+        const pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Biz%',
+                    data: bizPercentages,
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FFCE98'],
+                    hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FFCE98'],
+                    // Add Biz% values as tooltips
+                    tooltips: {
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var label = data.labels[tooltipItem.index];
+                                var value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                                return label + ': ' + value + '%';
+                            }
+                        }
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Pie Chart - Biz%'
+                    }
+                }
+            }
+        });
+        /*]]>*/
+    </script>
+</body>
+
+</html>
